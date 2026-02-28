@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GGR - Gagara Guardian of Rostov</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-image: url('a3259c7fb683a6504b6ae19596dd4197832d1876.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            margin: 0; 
+            padding: 0; 
+            color: #1e293b; 
+        }
+        .app-container { max-width: 1200px; margin: 0 auto; background-color: rgba(255, 255, 255, 0.9); min-height: 100vh; display: flex; flex-direction: column; position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.1); }
+        
+        .header { background-color: #22c55e; padding: 0.5rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 40; height: 80px; }
+        .logo-container { position: relative; height: 100%; display: flex; align-items: center; width: 180px; overflow: visible; pointer-events: none; }
+        .logo-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 140px; height: 140px; background-size: contain; background-repeat: no-repeat; background-position: center; opacity: 0.9; z-index: 1; pointer-events: none; }
+        .logo-duck { position: absolute; top: 50%; left: 60%; transform: translate(-50%, -50%) scaleX(-1); height: 100px; z-index: 2; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)); pointer-events: none; }
+        .logo-text { position: absolute; bottom: -45px; left: 50%; transform: translateX(-50%); font-weight: 900; font-size: 4.2rem; color: black; z-index: 3; letter-spacing: -0.05em; text-shadow: 4px 4px 0 white; line-height: 1; pointer-events: none; }
+        .logo-text span { font-size: 2rem; vertical-align: bottom; margin-left: -2px; }
+
+        .nav-links { display: flex; gap: 1.5rem; }
+        .nav-links a { font-size: 0.875rem; font-weight: 600; color: rgba(255,255,255,0.8); text-decoration: none; transition: color 0.2s; }
+        .nav-links a:hover { color: white; }
+        .nav-links a.active { color: white; border-bottom: 2px solid white; padding-bottom: 2px; }
+        
+        .section-header { display: flex; align-items: center; justify-content: center; margin: 2rem 1rem 1rem; }
+        .section-title { border: 2px solid #22c55e; border-radius: 9999px; padding: 0.5rem 2rem; text-align: center; font-weight: 800; font-size: 1rem; color: #166534; background: #f0fdf4; }
+        
+        .tag-filters { display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.5rem 2rem; scrollbar-width: none; }
+        .tag-filters::-webkit-scrollbar { display: none; }
+        .tag-btn { padding: 0.4rem 1rem; border-radius: 9999px; background: white; border: 1px solid #e2e8f0; font-size: 0.75rem; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .tag-btn:hover { border-color: #22c55e; color: #22c55e; }
+        .tag-btn.active { background: #22c55e; color: white; border-color: #22c55e; }
+
+        .sub-section-title { font-weight: 800; font-size: 1.125rem; margin: 1.5rem 2rem 1rem; color: #334155; display: flex; align-items: center; gap: 0.5rem; }
+        .sub-section-title::before { content: ""; display: block; width: 4px; height: 1.25rem; background: #22c55e; border-radius: 2px; }
+        
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; padding: 0 2rem; }
+        .card { background: white; border: 2px solid #118E0D; border-radius: 1.25rem; overflow: hidden; display: flex; flex-direction: column; position: relative; transition: transform 0.2s, box-shadow 0.2s; }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border-color: #22c55e; }
+        .card img { width: 100%; aspect-ratio: 16/10; object-fit: cover; background: #f8fafc; }
+        .card-footer { background-color: white; padding: 1rem; text-align: left; font-size: 0.875rem; font-weight: 600; color: #1e293b; }
+        .card-tag { display: inline-block; padding: 0.2rem 0.5rem; background: #f0fdf4; color: #166534; border-radius: 4px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; margin-bottom: 0.5rem; }
+        
+        .upvote-btn { position: absolute; top: 0.75rem; right: 0.75rem; background: rgba(255,255,255,0.95); backdrop-filter: blur(4px); border: 1px solid #e2e8f0; border-radius: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 800; padding: 0.4rem 0.75rem; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .upvote-btn:hover { background: #22c55e; color: white; border-color: #22c55e; transform: scale(1.05); }
+        .upvote-btn.voted { background: #22c55e; color: white; border-color: #22c55e; }
+        
+        .bottom-bar-container { position: sticky; bottom: 2rem; display: flex; justify-content: center; width: 100%; pointer-events: none; margin-top: auto; padding-bottom: 2rem; z-index: 50; }
+        .bottom-bar { pointer-events: auto; width: 100%; max-width: 500px; background-color: white; border: 2px solid #1e293b; border-radius: 9999px; display: flex; align-items: center; padding: 0.5rem 1rem; justify-content: space-between; box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
+        .search-input { border: none; outline: none; font-size: 1rem; font-weight: 600; flex-grow: 1; margin-left: 0.75rem; color: #1e293b; }
+        .plus-btn { position: fixed; bottom: 2rem; right: 2rem; background-color: #22c55e; color: white; border: 2px solid #1e293b; border-radius: 50%; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 600; cursor: pointer; transition: all 0.2s; z-index: 60; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .plus-btn:hover { transform: scale(1.1) rotate(90deg); background-color: #16a34a; }
+
+        .btn-loading { opacity: 0.7; cursor: wait; pointer-events: none; }
+        .upvote-btn:active { transform: scale(0.9); }
+        .tag-btn:active { transform: scale(0.95); }
+        button:active:not(:disabled) { transform: translateY(1px); }
+
+        #modal { background-color: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); }
+        .modal-content { background: white; width: 100%; max-width: 450px; border-radius: 2.5rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); padding: 2.5rem; border: 2px solid #1e293b; }
+        
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        .file-input-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .file-input-btn {
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            background: #f1f5f9;
+            border: 2px dashed #cbd5e1;
+            border-radius: 0.75rem;
+            text-align: center;
+            color: #64748b;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .file-input-wrapper:hover .file-input-btn {
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="logo-container">
+                <div class="logo-bg" style="background-image: url('ff082f78a98c312907ede4f0c000845f96573d1d.png')"></div>
+                <img src="5df093e7112efed90edabf39f37f2c1fec8b864a.png" class="logo-duck" alt="GGR Duck">
+                <div class="logo-text">GGR<span>nd</span></div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="user-profile" class="hidden md:flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full text-white text-xs font-bold">
+                    <span id="user-nickname">...</span>
+                </div>
+                <nav class="nav-links">
+                    <a href="#" class="active">События</a>
+                    <a href="#">Мероприятия</a>
+                </nav>
+            </div>
+        </header>
+
+        <div class="section-header">
+            <div class="section-title">В зоне ответственности</div>
+        </div>
+
+        <div id="tag-filters" class="tag-filters">
+            <button class="tag-btn active" onclick="filterByTag('Все')">Все</button>
+            <button class="tag-btn" onclick="filterByTag('Свалка')">Свалка</button>
+            <button class="tag-btn" onclick="filterByTag('Вырубка')">Вырубка</button>
+            <button class="tag-btn" onclick="filterByTag('Загрязнение')">Загрязнение</button>
+            <button class="tag-btn" onclick="filterByTag('Воздух')">Воздух</button>
+            <button class="tag-btn" onclick="filterByTag('Животные')">Животные</button>
+            <button class="tag-btn" onclick="filterByTag('Парковка')">Парковка</button>
+            <button class="tag-btn" onclick="filterByTag('Освещение')">Освещение</button>
+        </div>
+        
+        <div id="category-title" class="sub-section-title">Все события</div>
+        <div id="reports-list" class="grid-container mb-32">
+            <div class="col-span-full text-center py-20 text-slate-400">
+                <div class="animate-spin inline-block w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mb-4"></div>
+                <p class="font-bold">Загрузка данных...</p>
+            </div>
+        </div>
+
+        <div class="bottom-bar-container">
+            <div class="bottom-bar">
+                <div class="flex items-center flex-grow">
+                    <span class="font-black text-xl text-green-600"># 🌳</span>
+                    <input type="text" id="search-input" class="search-input" placeholder="Поиск проблем..." oninput="handleSearch()">
+                </div>
+            </div>
+        </div>
+
+        <button onclick="openModal()" class="plus-btn" title="Сообщить о проблеме">+</button>
+    </div>
+
+    <div id="modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6">
+        <div class="modal-content space-y-6">
+            <div class="flex justify-between items-center">
+                <h3 class="text-2xl font-black text-slate-800">Новое обращение</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-900 text-3xl transition-colors">&times;</button>
+            </div>
+            <form id="report-form" class="space-y-4">
+                <div class="space-y-1">
+                    <label class="text-xs font-bold uppercase text-slate-500 ml-1">Тип проблемы</label>
+                    <select id="type" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500 transition-colors">
+                        <option>Свалка</option>
+                        <option>Вырубка</option>
+                        <option>Загрязнение</option>
+                        <option>Воздух</option>
+                        <option>Животные</option>
+                        <option>Парковка</option>
+                        <option>Освещение</option>
+                        <option>Другое</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold uppercase text-slate-500 ml-1">Место</label>
+                    <input id="location" required placeholder="Где это находится?" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500 transition-colors">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold uppercase text-slate-500 ml-1">Описание</label>
+                    <textarea id="description" required rows="3" placeholder="Опишите подробности..." class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500 transition-colors resize-none"></textarea>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold uppercase text-slate-500 ml-1">Фото (необязательно)</label>
+                    <div class="file-input-wrapper">
+                        <button type="button" class="file-input-btn" id="file-label">Выбрать фото</button>
+                        <input type="file" id="image-input" accept="image/*" onchange="handleFileSelect(this)">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all">ОТПРАВИТЬ</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="nickname-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md">
+        <div class="modal-content text-center space-y-6">
+            <h3 class="text-2xl font-black text-slate-800">Добро пожаловать!</h3>
+            <p class="text-slate-500 text-sm">Представьтесь, чтобы участвовать в обсуждениях и голосовать за проблемы.</p>
+            <form id="nickname-form" class="space-y-4">
+                <input id="nickname-input" required maxlength="20" placeholder="Ваш никнейм..." class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500 transition-colors text-center font-bold">
+                <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] transition-all">СОХРАНИТЬ</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="discussion-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md">
+        <div class="modal-content max-w-2xl w-full h-[80vh] flex flex-col p-0 overflow-hidden">
+            <div class="p-6 border-b-2 border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 class="text-xl font-black text-slate-800">Обсуждение</h3>
+                    <p id="discussion-report-title" class="text-xs text-slate-500 font-bold truncate max-w-xs"></p>
+                </div>
+                <button onclick="closeDiscussion()" class="text-slate-400 hover:text-slate-900 text-3xl">&times;</button>
+            </div>
+            
+            <div id="comments-list" class="flex-grow overflow-y-auto p-6 space-y-4 bg-white">
+            </div>
+
+            <div class="p-4 border-t-2 border-slate-100 bg-slate-50">
+                <form id="comment-form" class="flex gap-2">
+                    <input id="comment-input" required placeholder="Написать сообщение..." class="flex-grow bg-white border-2 border-slate-200 rounded-xl px-4 py-2 focus:outline-none focus:border-green-500 transition-colors text-sm font-medium">
+                    <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-xl font-black text-sm border-2 border-slate-900 shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5 transition-all">ОТПРАВИТЬ</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

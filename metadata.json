@@ -1,0 +1,7 @@
+{
+  "name": "GGR (Gagara Guardian of Rostov)",
+  "description": "Gagara Guardian of Rostov — платформа для экологического мониторинга и защиты природы Ростова-на-Дону.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
