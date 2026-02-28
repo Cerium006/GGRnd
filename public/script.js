@@ -177,7 +177,7 @@ function renderReports(reports) {
                         МАСШТАБНАЯ ПРОБЛЕМА (${r.priority})
                     </div>
                 ` : ''}
-                <img src="${r.image || `https://picsum.photos/seed/${r.id}/400/250`}" alt="Problem" loading="lazy">
+                <img src="${r.image || '5e2c52e56b23aa47eae2c994ce951d6b220bb051.jpg'}" onerror="this.onerror=null; this.src='5e2c52e56b23aa47eae2c994ce951d6b220bb051.jpg'" alt="Problem" loading="lazy">
                 <div class="card-footer">
                     <div class="flex justify-between items-start mb-2">
                         <span class="card-tag">${r.type}</span>
