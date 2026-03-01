@@ -21,9 +21,9 @@
         
         .header { background-color: #22c55e; padding: 0.5rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 40; height: 80px; }
         .logo-container { position: relative; height: 100%; display: flex; align-items: center; width: 180px; overflow: visible; pointer-events: none; }
-        .logo-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 140px; height: 140px; background-size: contain; background-repeat: no-repeat; background-position: center; opacity: 0.9; z-index: 1; pointer-events: none; }
-        .logo-duck { position: absolute; top: 50%; left: 60%; transform: translate(-50%, -50%) scaleX(-1); height: 100px; z-index: 2; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)); pointer-events: none; }
-        .logo-text { position: absolute; bottom: -45px; left: 50%; transform: translateX(-50%); font-weight: 900; font-size: 4.2rem; color: black; z-index: 3; letter-spacing: -0.05em; text-shadow: 4px 4px 0 white; line-height: 1; pointer-events: none; }
+        .logo-bg { position: absolute; top: 45%; left: 55%; transform: translate(-50%, -50%); width: 100px; height: 140px; background-size: contain; background-repeat: no-repeat; background-position: center; opacity: 0.9; z-index: 1; pointer-events: none; }
+        .logo-duck { position:absolute; top: 55%; left: 55%; transform: translate(-50%, -50%) scaleX(1);width: 80px;height: 70px; z-index: 2; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)); pointer-events: none; }
+        .logo-text { position: absolute; bottom: -25px; left: 65%; transform: translateX(-50%); font-weight: 900; font-size: 3.2rem; color: black; z-index: 3; letter-spacing: -0.05em; text-shadow: 4px 4px 0 white; line-height: 1; pointer-events: none; }
         .logo-text span { font-size: 2rem; vertical-align: bottom; margin-left: -2px; }
 
         .nav-links { display: flex; gap: 1.5rem; }
@@ -105,12 +105,12 @@
     <div class="app-container">
         <header class="header">
             <div class="logo-container">
-                <div class="logo-bg" style="background-image: url('ff082f78a98c312907ede4f0c000845f96573d1d.png')"></div>
-                <img src="5df093e7112efed90edabf39f37f2c1fec8b864a.png" class="logo-duck" alt="GGR Duck">
+                <div class="logo-bg" style="background-image: url('orig-edited-free (carve.photos).png')"></div>
+                <img src="i-edited-free (carve.photos) (4).png" class="logo-duck" alt="GGR Duck">
                 <div class="logo-text">GGR<span>nd</span></div>
             </div>
             <div class="flex items-center gap-4">
-                <div id="user-profile" class="hidden md:flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full text-white text-xs font-bold">
+                <div id="user-profile" onclick="openProfile()" class="hidden md:flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full text-white text-xs font-bold cursor-pointer hover:bg-white/30 transition-all">
                     <span id="user-nickname">...</span>
                 </div>
                 <nav class="nav-links">
@@ -223,6 +223,33 @@
                 </div>
                 <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all">ОТПРАВИТЬ</button>
             </form>
+        </div>
+    </div>
+
+    <div id="profile-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md">
+        <div class="modal-content max-w-2xl w-full h-[85vh] flex flex-col p-0 overflow-hidden">
+            <div class="p-6 border-b-2 border-slate-100 flex justify-between items-center bg-slate-50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-black">👤</div>
+                    <div>
+                        <h3 id="profile-nickname" class="text-xl font-black text-slate-800">Профиль</h3>
+                        <p id="profile-ip" class="text-[10px] text-slate-400 font-bold uppercase tracking-wider"></p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="handleLogout()" class="text-xs font-bold text-red-500 hover:text-red-600 px-3 py-1 border border-red-100 rounded-lg transition-colors">ВЫЙТИ</button>
+                    <button onclick="closeProfile()" class="text-slate-400 hover:text-slate-900 text-3xl ml-2">&times;</button>
+                </div>
+            </div>
+
+            <div class="flex border-b-2 border-slate-100 bg-white">
+                <button onclick="switchProfileTab('my-reports')" id="btn-my-reports" class="flex-1 py-3 text-xs font-black uppercase tracking-widest border-b-2 border-green-500 text-green-600">Мои события</button>
+                <button onclick="switchProfileTab('my-initiatives')" id="btn-my-initiatives" class="flex-1 py-3 text-xs font-black uppercase tracking-widest border-b-2 border-transparent text-slate-400">Мои мероприятия</button>
+            </div>
+            
+            <div id="profile-content" class="flex-grow overflow-y-auto p-6 space-y-4 bg-slate-50">
+                <!-- Activity items will be rendered here -->
+            </div>
         </div>
     </div>
 

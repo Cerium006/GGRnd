@@ -110,6 +110,16 @@ const api = {
             throw new Error(err.error || 'Failed to create initiative');
         }
         return res.json();
+    },
+    async getUserActivity() {
+        const res = await fetch('/api/user/activity');
+        if (!res.ok) throw new Error('Failed to fetch activity');
+        return res.json();
+    },
+    async logout() {
+        const res = await fetch('/api/user/logout', { method: 'POST' });
+        if (!res.ok) throw new Error('Failed to logout');
+        return res.json();
     }
 };
 
@@ -193,6 +203,16 @@ function applyFilters() {
                 i.description.toLowerCase().includes(searchTerm);
             return matchesSearch;
         });
+
+        filtered.sort((a, b) => {
+            // Active first, completed last
+            if (a.status !== b.status) {
+                return a.status === 'активно' ? -1 : 1;
+            }
+            // Newest first (by ID)
+            return b.id - a.id;
+        });
+
         renderInitiatives(filtered);
     }
 }
@@ -597,7 +617,132 @@ document.getElementById('report-form')?.addEventListener('submit', async (e) => 
 
 function openModal() { document.getElementById('modal')?.classList.remove('hidden'); }
 function closeModal() { document.getElementById('modal')?.classList.add('hidden'); }
-window.addEventListener('keydown', (e) => e.key === 'Escape' && (closeModal() || closeDiscussion() || closeInitiativeModal()));
+
+let currentProfileTab = 'my-reports';
+async function openProfile() {
+    const modal = document.getElementById('profile-modal');
+    if (!modal) return;
+    
+    document.getElementById('profile-nickname').textContent = userProfile.nickname;
+    document.getElementById('profile-ip').textContent = `ID: ${userProfile.ip}`;
+    
+    modal.classList.remove('hidden');
+    await refreshUserActivity();
+}
+
+function closeProfile() {
+    document.getElementById('profile-modal')?.classList.add('hidden');
+}
+
+async function handleLogout() {
+    if (!confirm('Вы уверены, что хотите выйти?')) return;
+    try {
+        await api.logout();
+        window.location.reload();
+    } catch (e) {
+        alert('Ошибка при выходе');
+    }
+}
+
+function switchProfileTab(tab) {
+    currentProfileTab = tab;
+    const btnReports = document.getElementById('btn-my-reports');
+    const btnInitiatives = document.getElementById('btn-my-initiatives');
+    
+    if (tab === 'my-reports') {
+        btnReports.classList.add('border-green-500', 'text-green-600');
+        btnReports.classList.remove('border-transparent', 'text-slate-400');
+        btnInitiatives.classList.remove('border-green-500', 'text-green-600');
+        btnInitiatives.classList.add('border-transparent', 'text-slate-400');
+    } else {
+        btnInitiatives.classList.add('border-green-500', 'text-green-600');
+        btnInitiatives.classList.remove('border-transparent', 'text-slate-400');
+        btnReports.classList.remove('border-green-500', 'text-green-600');
+        btnReports.classList.add('border-transparent', 'text-slate-400');
+    }
+    
+    refreshUserActivity();
+}
+
+async function refreshUserActivity() {
+    const content = document.getElementById('profile-content');
+    content.innerHTML = '<div class="text-center py-10 text-slate-400">Загрузка...</div>';
+    
+    try {
+        const activity = await api.getUserActivity();
+        renderUserActivity(activity);
+    } catch (e) {
+        content.innerHTML = '<div class="text-center py-10 text-red-400">Ошибка загрузки</div>';
+    }
+}
+
+function renderUserActivity(activity) {
+    const content = document.getElementById('profile-content');
+    
+    if (currentProfileTab === 'my-reports') {
+        const created = activity.reports.created;
+        const upvoted = activity.reports.upvoted;
+        
+        content.innerHTML = `
+            <div class="space-y-6">
+                <section>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Мои обращения (${created.length})</h4>
+                    ${created.length ? created.map(r => `
+                        <div class="bg-white p-4 rounded-xl border-2 border-slate-100 mb-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-800">${r.description.substring(0, 50)}...</span>
+                                <span class="text-[9px] font-black px-2 py-1 bg-slate-100 rounded uppercase">${r.status}</span>
+                            </div>
+                        </div>
+                    `).join('') : '<p class="text-xs text-slate-400 italic">Вы еще не создавали обращений</p>'}
+                </section>
+                <section>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Поддержано вами (${upvoted.length})</h4>
+                    ${upvoted.length ? upvoted.map(r => `
+                        <div class="bg-white p-4 rounded-xl border-2 border-slate-100 mb-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-800">${r.description.substring(0, 50)}...</span>
+                                <span class="text-[9px] font-black px-2 py-1 bg-green-50 rounded text-green-600 uppercase">👍 ${r.upvotes}</span>
+                            </div>
+                        </div>
+                    `).join('') : '<p class="text-xs text-slate-400 italic">Вы еще не голосовали за проблемы</p>'}
+                </section>
+            </div>
+        `;
+    } else {
+        const created = activity.initiatives.created;
+        const joined = activity.initiatives.joined;
+        
+        content.innerHTML = `
+            <div class="space-y-6">
+                <section>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Созданные мероприятия (${created.length})</h4>
+                    ${created.length ? created.map(i => `
+                        <div class="bg-white p-4 rounded-xl border-2 border-slate-100 mb-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-800">${i.title}</span>
+                                <span class="text-[9px] font-black px-2 py-1 bg-slate-100 rounded uppercase">${i.status}</span>
+                            </div>
+                        </div>
+                    `).join('') : '<p class="text-xs text-slate-400 italic">Вы еще не создавали мероприятий</p>'}
+                </section>
+                <section>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Вы участвуете (${joined.length})</h4>
+                    ${joined.length ? joined.map(i => `
+                        <div class="bg-white p-4 rounded-xl border-2 border-slate-100 mb-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-800">${i.title}</span>
+                                <span class="text-[9px] font-black px-2 py-1 bg-green-50 rounded text-green-600 uppercase">👥 ${i.participants}</span>
+                            </div>
+                        </div>
+                    `).join('') : '<p class="text-xs text-slate-400 italic">Вы еще не записывались на мероприятия</p>'}
+                </section>
+            </div>
+        `;
+    }
+}
+
+window.addEventListener('keydown', (e) => e.key === 'Escape' && (closeModal() || closeDiscussion() || closeInitiativeModal() || closeProfile()));
 
 initProfile();
 fetchData();
