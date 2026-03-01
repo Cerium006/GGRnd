@@ -79,6 +79,7 @@ const initDb = () => {
   addColumn('reports', 'result_text', 'TEXT');
   addColumn('reports', 'created_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
   addColumn('reports', 'status', "TEXT DEFAULT 'принято'");
+  addColumn('reports', 'user_ip', 'TEXT');
   addColumn('initiatives', 'status', "TEXT DEFAULT 'активно'");
   addColumn('initiatives', 'user_ip', "TEXT");
 };
@@ -169,6 +170,42 @@ app.post("/api/profile", (req, res) => {
   
   db.prepare("INSERT OR REPLACE INTO users (ip, nickname) VALUES (?, ?)").run(ip, nickname);
   res.json({ ip, nickname });
+});
+
+app.get("/api/user/activity", (req, res) => {
+  try {
+    const ip = getUserIp(req);
+    
+    const createdReports = db.prepare("SELECT * FROM reports WHERE user_ip = ? ORDER BY created_at DESC").all(ip);
+    const upvotedReports = db.prepare("SELECT r.* FROM reports r JOIN votes v ON r.id = v.report_id WHERE v.user_ip = ? ORDER BY r.created_at DESC").all(ip);
+    
+    const createdInitiatives = db.prepare("SELECT * FROM initiatives WHERE user_ip = ? ORDER BY id DESC").all(ip);
+    const joinedInitiatives = db.prepare("SELECT i.* FROM initiatives i JOIN initiative_participants ip_table ON i.id = ip_table.initiative_id WHERE ip_table.user_ip = ? ORDER BY i.id DESC").all(ip);
+    
+    res.json({
+      reports: {
+        created: createdReports,
+        upvoted: upvotedReports
+      },
+      initiatives: {
+        created: createdInitiatives,
+        joined: joinedInitiatives
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching user activity:", error);
+    res.status(500).json({ error: "Failed to fetch user activity" });
+  }
+});
+
+app.post("/api/user/logout", (req, res) => {
+  try {
+    const ip = getUserIp(req);
+    db.prepare("DELETE FROM users WHERE ip = ?").run(ip);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to logout" });
+  }
 });
 
 app.get("/api/reports", (req, res) => {
@@ -290,8 +327,9 @@ app.post("/api/reports", (req, res) => {
     }
 
     const service = serviceMap[type] || serviceMap['Другое'];
+    const ip = getUserIp(req);
 
-    const result = db.prepare("INSERT INTO reports (type, description, location, image, priority, service) VALUES (?, ?, ?, ?, ?, ?)").run(type, description, location, image, priority, service);
+    const result = db.prepare("INSERT INTO reports (type, description, location, image, priority, service, user_ip) VALUES (?, ?, ?, ?, ?, ?, ?)").run(type, description, location, image, priority, service, ip);
     res.json({ id: result.lastInsertRowid, priority, service });
   } catch (error) {
     console.error("Error creating report:", error);
