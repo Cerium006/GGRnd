@@ -1,5 +1,8 @@
 let allReports = [];
+let allInitiatives = [];
 let currentTag = 'Все';
+let currentStatus = 'Все';
+let activeTab = 'reports';
 let selectedImageBase64 = null;
 let userProfile = null;
 let currentDiscussionId = null;
@@ -77,6 +80,36 @@ const api = {
             throw new Error(err.error || 'Failed to create report');
         }
         return res.json();
+    },
+    async getInitiatives() {
+        const res = await fetch('/api/initiatives');
+        if (!res.ok) throw new Error('Failed to fetch initiatives');
+        return res.json();
+    },
+    async joinInitiative(id) {
+        const res = await fetch(`/api/initiatives/${id}/join`, { method: 'POST' });
+        if (!res.ok) throw new Error('Failed to join initiative');
+        return res.json();
+    },
+    async completeInitiative(id) {
+        const res = await fetch(`/api/initiatives/${id}/complete`, { method: 'POST' });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Failed to complete initiative');
+        }
+        return res.json();
+    },
+    async createInitiative(data) {
+        const res = await fetch('/api/initiatives', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Failed to create initiative');
+        }
+        return res.json();
     }
 };
 
@@ -114,7 +147,11 @@ async function fetchData() {
     if (pendingActions.size > 0) return;
     
     try {
-        allReports = await api.getReports();
+        if (activeTab === 'reports') {
+            allReports = await api.getReports();
+        } else {
+            allInitiatives = await api.getInitiatives();
+        }
         applyFilters();
     } catch (error) {
         console.error('Fetch error:', error);
@@ -126,27 +163,38 @@ async function fetchData() {
 function applyFilters() {
     const searchTerm = document.getElementById('search-input')?.value.toLowerCase() || '';
     
-    let filtered = allReports.filter(r => {
-        const matchesTag = currentTag === 'Все' || r.type === currentTag;
-        const matchesSearch = !searchTerm || 
-            r.description.toLowerCase().includes(searchTerm) || 
-            r.location.toLowerCase().includes(searchTerm) ||
-            r.type.toLowerCase().includes(searchTerm);
-        return matchesTag && matchesSearch;
-    });
+    if (activeTab === 'reports') {
+        let filtered = allReports.filter(r => {
+            const matchesTag = currentTag === 'Все' || r.type === currentTag;
+            const matchesStatus = currentStatus === 'Все' || r.status === currentStatus;
+            const matchesSearch = !searchTerm || 
+                r.description.toLowerCase().includes(searchTerm) || 
+                r.location.toLowerCase().includes(searchTerm) ||
+                r.type.toLowerCase().includes(searchTerm);
+            return matchesTag && matchesStatus && matchesSearch;
+        });
 
-    filtered.sort((a, b) => {
-        const statusOrder = { 'принято': 0, 'в работе': 0, 'решено': 1 };
-        if (statusOrder[a.status] !== statusOrder[b.status]) {
-            return statusOrder[a.status] - statusOrder[b.status];
-        }
-        if ((b.priority || 1) !== (a.priority || 1)) {
-            return (b.priority || 1) - (a.priority || 1);
-        }
-        return (b.upvotes || 0) - (a.upvotes || 0);
-    });
-    
-    renderReports(filtered);
+        filtered.sort((a, b) => {
+            const statusOrder = { 'принято': 0, 'в работе': 0, 'решено': 1 };
+            if (statusOrder[a.status] !== statusOrder[b.status]) {
+                return statusOrder[a.status] - statusOrder[b.status];
+            }
+            if ((b.priority || 1) !== (a.priority || 1)) {
+                return (b.priority || 1) - (a.priority || 1);
+            }
+            return (b.upvotes || 0) - (a.upvotes || 0);
+        });
+        
+        renderReports(filtered);
+    } else {
+        let filtered = allInitiatives.filter(i => {
+            const matchesSearch = !searchTerm || 
+                i.title.toLowerCase().includes(searchTerm) || 
+                i.description.toLowerCase().includes(searchTerm);
+            return matchesSearch;
+        });
+        renderInitiatives(filtered);
+    }
 }
 
 function renderReports(reports) {
@@ -362,15 +410,147 @@ document.getElementById('comment-form')?.addEventListener('submit', async (e) =>
     }
 });
 
+function renderInitiatives(initiatives) {
+    const list = document.getElementById('reports-list');
+    if (!list) return;
+    
+    if (initiatives.length === 0) {
+        list.innerHTML = '<div class="col-span-full text-center py-20 text-slate-400">Мероприятий пока нет</div>';
+        return;
+    }
+
+    list.innerHTML = initiatives.map(i => {
+        const isCompleted = i.status === 'завершено';
+        const isOwner = userProfile && i.user_ip === userProfile.ip;
+        const hasJoined = localStorage.getItem('joined_'+i.id);
+
+        return `
+            <div class="card ${isCompleted ? 'opacity-60 grayscale-[0.5]' : ''}">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="card-tag">Мероприятие</span>
+                        <span class="text-[9px] font-black px-2 py-1 rounded uppercase ${isCompleted ? 'bg-slate-100 text-slate-500' : 'bg-green-100 text-green-700'}">${i.status}</span>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-lg mb-1">${i.title}</h3>
+                    <p class="text-sm text-slate-600 mb-4">${i.description}</p>
+                    <div class="flex items-center gap-4 text-xs text-slate-500 mb-4">
+                        <span>📅 ${i.date}</span>
+                        <span>👥 ${i.participants} участников</span>
+                    </div>
+                    <div class="flex gap-2">
+                        ${!isCompleted ? `
+                            <button onclick="handleJoinInitiative(${i.id})" class="flex-1 py-2 text-xs font-bold ${hasJoined ? 'bg-slate-200 text-slate-500 cursor-default' : 'bg-green-500 text-white hover:bg-green-600'} rounded-lg transition-colors" ${hasJoined ? 'disabled' : ''}>
+                                ${hasJoined ? 'ВЫ ЗАПИСАНЫ' : 'УЧАСТВОВАТЬ'}
+                            </button>
+                            ${isOwner ? `<button onclick="handleCompleteInitiative(${i.id})" class="flex-1 py-2 text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-200 transition-colors">ЗАВЕРШИТЬ</button>` : ''}
+                        ` : '<div class="w-full text-center py-2 text-xs font-bold text-slate-400 bg-slate-50 rounded-lg">МЕРОПРИЯТИЕ ЗАВЕРШЕНО</div>'}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function handleJoinInitiative(id) {
+    try {
+        await api.joinInitiative(id);
+        localStorage.setItem('joined_'+id, 'true');
+        fetchData();
+    } catch (e) {
+        alert(e.message);
+    }
+}
+
+async function handleCompleteInitiative(id) {
+    if (!confirm('Отметить мероприятие как завершенное?')) return;
+    try {
+        await api.completeInitiative(id);
+        fetchData();
+    } catch (e) {
+        alert(e.message);
+    }
+}
+
 function filterByTag(tag) {
     currentTag = tag;
-    document.querySelectorAll('.tag-btn').forEach(btn => {
+    document.querySelectorAll('#tag-filters .tag-btn').forEach(btn => {
         btn.classList.toggle('active', btn.textContent === tag);
     });
     const title = document.getElementById('category-title');
     if (title) title.textContent = tag === 'Все' ? 'Все события' : `Категория: ${tag}`;
     applyFilters();
 }
+
+function filterByStatus(status) {
+    currentStatus = status;
+    document.querySelectorAll('#status-filters .tag-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase().includes(status.toLowerCase()));
+    });
+    // Special case for "Все статусы"
+    if (status === 'Все') {
+        document.querySelectorAll('#status-filters .tag-btn')[0].classList.add('active');
+    }
+    applyFilters();
+}
+
+function switchTab(tab) {
+    activeTab = tab;
+    document.getElementById('nav-reports').classList.toggle('active', tab === 'reports');
+    document.getElementById('nav-initiatives').classList.toggle('active', tab === 'initiatives');
+    
+    const tagFilters = document.getElementById('tag-filters');
+    const statusFilters = document.getElementById('status-filters');
+    const categoryTitle = document.getElementById('category-title');
+    const searchInput = document.getElementById('search-input');
+
+    if (tab === 'reports') {
+        tagFilters.classList.remove('hidden');
+        statusFilters.classList.remove('hidden');
+        categoryTitle.textContent = currentTag === 'Все' ? 'Все события' : `Категория: ${currentTag}`;
+        if (searchInput) searchInput.placeholder = "Поиск проблем...";
+    } else {
+        tagFilters.classList.add('hidden');
+        statusFilters.classList.add('hidden');
+        categoryTitle.textContent = 'Мероприятия и инициативы';
+        if (searchInput) searchInput.placeholder = "Поиск мероприятий...";
+    }
+    
+    fetchData();
+}
+
+function handlePlusClick() {
+    if (activeTab === 'reports') {
+        openModal();
+    } else {
+        openInitiativeModal();
+    }
+}
+
+function openInitiativeModal() { document.getElementById('initiative-modal').classList.remove('hidden'); }
+function closeInitiativeModal() { document.getElementById('initiative-modal').classList.add('hidden'); }
+
+document.getElementById('initiative-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = 'ПУБЛИКАЦИЯ...';
+
+    try {
+        await api.createInitiative({
+            title: document.getElementById('init-title').value,
+            date: document.getElementById('init-date').value,
+            description: document.getElementById('init-description').value
+        });
+        closeInitiativeModal();
+        fetchData();
+        e.target.reset();
+    } catch (error) {
+        alert(error.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'ОПУБЛИКОВАТЬ';
+    }
+});
 
 function handleSearch() { applyFilters(); }
 
@@ -417,7 +597,7 @@ document.getElementById('report-form')?.addEventListener('submit', async (e) => 
 
 function openModal() { document.getElementById('modal')?.classList.remove('hidden'); }
 function closeModal() { document.getElementById('modal')?.classList.add('hidden'); }
-window.addEventListener('keydown', (e) => e.key === 'Escape' && (closeModal() || closeDiscussion()));
+window.addEventListener('keydown', (e) => e.key === 'Escape' && (closeModal() || closeDiscussion() || closeInitiativeModal()));
 
 initProfile();
 fetchData();

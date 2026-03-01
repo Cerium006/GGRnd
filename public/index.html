@@ -114,8 +114,8 @@
                     <span id="user-nickname">...</span>
                 </div>
                 <nav class="nav-links">
-                    <a href="#" class="active">События</a>
-                    <a href="#">Мероприятия</a>
+                    <a href="#" id="nav-reports" class="active" onclick="switchTab('reports')">События</a>
+                    <a href="#" id="nav-initiatives" onclick="switchTab('initiatives')">Мероприятия</a>
                 </nav>
             </div>
         </header>
@@ -133,7 +133,13 @@
             <button class="tag-btn" onclick="filterByTag('Животные')">Животные</button>
             <button class="tag-btn" onclick="filterByTag('Парковка')">Парковка</button>
             <button class="tag-btn" onclick="filterByTag('Освещение')">Освещение</button>
-            <button class="tag-btn" onclick="filterByTag('Другое')">Другое</button>
+        </div>
+
+        <div id="status-filters" class="tag-filters mt-2">
+            <button class="tag-btn active" onclick="filterByStatus('Все')">Все статусы</button>
+            <button class="tag-btn" onclick="filterByStatus('принято')">Принято</button>
+            <button class="tag-btn" onclick="filterByStatus('в работе')">В работе</button>
+            <button class="tag-btn" onclick="filterByStatus('решено')">Решено</button>
         </div>
         
         <div id="category-title" class="sub-section-title">Все события</div>
@@ -153,7 +159,31 @@
             </div>
         </div>
 
-        <button onclick="openModal()" class="plus-btn" title="Сообщить о проблеме">+</button>
+        <button onclick="handlePlusClick()" class="plus-btn" title="Добавить">+</button>
+    </div>
+
+    <div id="initiative-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md">
+        <div class="modal-content space-y-6">
+            <div class="flex justify-between items-center">
+                <h3 class="text-2xl font-black text-slate-800">Новое мероприятие</h3>
+                <button onclick="closeInitiativeModal()" class="text-slate-400 hover:text-slate-900 text-3xl transition-colors">&times;</button>
+            </div>
+            <form id="initiative-form" class="space-y-4">
+                <div class="space-y-1">
+                    <label class="text-xs font-bold uppercase text-slate-500 ml-1">Название</label>
+                    <input id="init-title" required placeholder="Как называется мероприятие?" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500 transition-colors">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold uppercase text-slate-500 ml-1">Дата</label>
+                    <input id="init-date" type="date" required class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500 transition-colors">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold uppercase text-slate-500 ml-1">Описание</label>
+                    <textarea id="init-description" required rows="3" placeholder="Что планируется сделать?" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500 transition-colors resize-none"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all uppercase">Опубликовать</button>
+            </form>
+        </div>
     </div>
 
     <div id="modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6">
