@@ -1,0 +1,4 @@
+.logo-bg { position: absolute; top: 45%; left: 55%; transform: translate(-50%, -50%); width: 100px; height: 140px; background-size: contain; background-repeat: no-repeat; background-position: center; opacity: 0.9; z-index: 1; pointer-events: none; }
+        .logo-duck { position:absolute; top: 55%; left: 55%; transform: translate(-50%, -50%) scaleX(1);width: 80px;height: 70px; z-index: 2; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)); pointer-events: none; }
+        .logo-text { position: absolute; bottom: -10px; left: 57%; transform: translateX(-50%); font-weight: 1000; font-size: 2.1rem; color: black; z-index: 3; letter-spacing: -0.05em; text-shadow: 2px 0px 0 white; line-height: 1; pointer-events: none; } 
+        .logo-text span { font-size: 1rem;vertical-align: bottom; margin-left: 1px; text-shadow: 1px 2px 0 white; }
