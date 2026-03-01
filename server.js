@@ -32,7 +32,15 @@ const initDb = () => {
       title TEXT NOT NULL,
       description TEXT NOT NULL,
       date TEXT NOT NULL,
-      participants INTEGER DEFAULT 0
+      participants INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'активно',
+      user_ip TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS initiative_participants (
+      initiative_id INTEGER,
+      user_ip TEXT,
+      UNIQUE(initiative_id, user_ip)
     );
 
     CREATE TABLE IF NOT EXISTS users (
@@ -71,6 +79,8 @@ const initDb = () => {
   addColumn('reports', 'result_text', 'TEXT');
   addColumn('reports', 'created_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
   addColumn('reports', 'status', "TEXT DEFAULT 'принято'");
+  addColumn('initiatives', 'status', "TEXT DEFAULT 'активно'");
+  addColumn('initiatives', 'user_ip', "TEXT");
 };
 
 initDb();
@@ -100,6 +110,17 @@ if (reportCount.count === 0) {
   
   const insert = db.prepare("INSERT INTO reports (type, description, location, status, upvotes, service) VALUES (?, ?, ?, ?, ?, ?)");
   seedReports.forEach(r => insert.run(...r));
+}
+
+const initiativeCount = db.prepare("SELECT COUNT(*) as count FROM initiatives").get();
+if (initiativeCount.count === 0) {
+  const seedInitiatives = [
+    ["Субботник в парке", "Очистка территории от мусора", "2024-05-20", 15, "активно"],
+    ["Посадка деревьев", "Высадка саженцев липы", "2024-06-10", 8, "активно"],
+    ["Эко-лекция", "Лекция о раздельном сборе мусора", "2024-04-15", 42, "завершено"]
+  ];
+  const insert = db.prepare("INSERT INTO initiatives (title, description, date, participants, status) VALUES (?, ?, ?, ?, ?)");
+  seedInitiatives.forEach(i => insert.run(...i));
 }
 
 const app = express();
@@ -288,14 +309,56 @@ app.get("/api/initiatives", (req, res) => {
   }
 });
 
+app.post("/api/initiatives", (req, res) => {
+  try {
+    const { title, description, date } = req.body;
+    const ip = getUserIp(req);
+    if (!title || !description || !date) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+    const result = db.prepare("INSERT INTO initiatives (title, description, date, user_ip) VALUES (?, ?, ?, ?)").run(title, description, date, ip);
+    res.json({ id: result.lastInsertRowid });
+  } catch (error) {
+    console.error("Error creating initiative:", error);
+    res.status(500).json({ error: "Failed to create initiative" });
+  }
+});
+
 app.post("/api/initiatives/:id/join", (req, res) => {
   try {
     const { id } = req.params;
+    const ip = getUserIp(req);
+
+    const existing = db.prepare("SELECT * FROM initiative_participants WHERE initiative_id = ? AND user_ip = ?").get(id, ip);
+    if (existing) {
+      return res.status(400).json({ error: "Вы уже записаны на это мероприятие" });
+    }
+
+    db.prepare("INSERT INTO initiative_participants (initiative_id, user_ip) VALUES (?, ?)").run(id, ip);
     db.prepare("UPDATE initiatives SET participants = participants + 1 WHERE id = ?").run(id);
     res.json({ success: true });
   } catch (error) {
     console.error("Error joining initiative:", error);
-    res.status(500).json({ error: "Failed to join initiative", details: error.message });
+    res.status(500).json({ error: "Failed to join initiative" });
+  }
+});
+
+app.post("/api/initiatives/:id/complete", (req, res) => {
+  try {
+    const { id } = req.params;
+    const ip = getUserIp(req);
+    
+    const initiative = db.prepare("SELECT user_ip FROM initiatives WHERE id = ?").get(id);
+    if (!initiative) return res.status(404).json({ error: "Not found" });
+    if (initiative.user_ip && initiative.user_ip !== ip) {
+      return res.status(403).json({ error: "Только создатель может завершить мероприятие" });
+    }
+
+    db.prepare("UPDATE initiatives SET status = 'завершено' WHERE id = ?").run(id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error completing initiative:", error);
+    res.status(500).json({ error: "Failed to complete initiative" });
   }
 });
 
